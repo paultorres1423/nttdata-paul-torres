@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  client-person-app:
+    image: client-person-app:latest
+    build:
+      context: ./nttdata-client-person # Ruta del primer microservicio
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db-client-person
+      - rabbitmq
+    environment:
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-client-person:5432/nttdata
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: NttD41@
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      # Configuración de RabbitMQ
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+
+  account-movements-app:
+    image: account-movements-app:latest
+    build:
+      context: ./nttdata-account-movements # Ruta del segundo microservicio
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8080"
+    depends_on:
+      - db-account-movements
+      - rabbitmq
+    environment:
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-account-movements:5432/nttdata
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: NttD41@
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      # Configuración de RabbitMQ
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+
+  db-client-person:
+    image: postgres:16.1-alpine
+    container_name: client-person-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: NttD41@
+      POSTGRES_DB: nttdata
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - pgdata-client-person:/var/lib/postgresql/data/pgdata
+      - ./nttdata-client-person/BaseDatos.sql:/docker-entrypoint-initdb.d/BaseDatos.sql
+
+  db-account-movements:
+    image: postgres:16.1-alpine
+    container_name: account-movements-db
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: NttD41@
+      POSTGRES_DB: nttdata
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - pgdata-account-movements:/var/lib/postgresql/data/pgdata
+      - ./nttdata-account-movements/BaseDatos.sql:/docker-entrypoint-initdb.d/BaseDatos.sql
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+volumes:
+  pgdata-client-person:
+  pgdata-account-movements:
